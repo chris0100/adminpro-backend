@@ -1,0 +1,27 @@
+server:
+    port: 8081
+
+spring:
+    profiles:
+        active: development
+
+    data:
+      mongodb:
+          uri: mongodb://localhost:27017
+          database: hospitaldb
+          auto-index-creation: true
+    #          uri: mongodb+srv://root:fence0gras@cluster0.hzftt.mongodb.net/test?authSource=admin&replicaSet=Cluster0-shard-0&readPreference=primary&appname=MongoDB%20Compass&ssl=true
+
+    jackson:
+        time-zone: America/Bogota
+        locale: es_COL
+
+    servlet:
+      multipart:
+          max-file-size: 10MB
+          max-request-size: 10MB
+
+#    security:
+#      user:
+#          name: car
+#          password: fence0gras
