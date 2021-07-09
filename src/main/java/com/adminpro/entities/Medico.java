@@ -5,8 +5,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.List;
-
 @Document(collection = "medico")
 @Data
 public class Medico {
@@ -17,6 +15,11 @@ public class Medico {
     @Indexed(name = "nombre")
     private String nombre;
     private String img;
-    private List<Usuario> idUsuariosRegistrados;
-    private Hospital idHospitalRegistrado;
+    private Usuario usuario;
+    private Hospital hospital;
+
+
+    public Medico() {
+        this.img = "sin-foto.png";
+    }
 }

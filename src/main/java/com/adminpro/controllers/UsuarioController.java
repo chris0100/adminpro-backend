@@ -13,6 +13,8 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -56,7 +58,40 @@ public class UsuarioController {
 
 
 
-    // Buscar todo
+    // Buscar por tipo
+    @GetMapping("/todo/{tipo}/{search}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public ResponseEntity BuscarPorTipo(@PathVariable("search") String search,
+                                    @PathVariable("tipo") String tipo) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        //busqueda de los usuarios que coincidan con ese nombre
+        if (tipo.equals("usuarios")){
+            List<Usuario> listaUsuarios = usuarioServiceObj.findByNombreContains(search);
+            log.info(listaUsuarios.toString());
+            response.put("usuarios", listaUsuarios);
+        }
+
+        //busqueda de los hospitales
+        if (tipo.equals("hospitales")){
+            List<Hospital> listaHospitales = hospitalServiceObj.findByNombreContains(search);
+            response.put("hospitales", listaHospitales);
+            System.out.println("busca hospitales");
+        }
+
+        //busqueda de los medicos
+        if (tipo.equals("medicos")){
+            List<Medico> listaMedicos = medicoServiceObj.findByNombreContains(search);
+            response.put("medicos", listaMedicos);
+        }
+
+        return new ResponseEntity(response, HttpStatus.OK);
+    }
+
+
+
+    // Buscar all
     @GetMapping("/todo/{search}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public ResponseEntity buscarAll(@PathVariable("search") String search) {
@@ -65,8 +100,8 @@ public class UsuarioController {
 
         //busqueda de los usuarios que coincidan con ese nombre
         List<Usuario> listaUsuarios = usuarioServiceObj.findByNombreContains(search);
-        log.info(listaUsuarios.toString());
         response.put("usuarios", listaUsuarios);
+
 
         //busqueda de los hospitales
         List<Hospital> listaHospitales = hospitalServiceObj.findByNombreContains(search);
@@ -81,15 +116,16 @@ public class UsuarioController {
 
 
     // Obtener lista de usuarios
-    @GetMapping("/usuarios")
+    @GetMapping("/usuarios/{page}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public ResponseEntity getUsuarios() {
+    public ResponseEntity getUsuarios(@PathVariable("page") int page) {
         List<UsuarioDTO> listaUsuariosDTO;
         Map<String, Object> response = new HashMap<>();
 
+        Pageable pageRequest = PageRequest.of(page,5);
+
         try {
-            //listaUsuariosDTO = usuarioServiceObj.findAllDTO();
-            listaUsuariosDTO = usuarioServiceObj.findAll()
+            listaUsuariosDTO = usuarioServiceObj.findAll(pageRequest)
                     .stream()
                     .map(obj -> {
                         UsuarioDTO usuarioDTO = modelMapper.map(obj, UsuarioDTO.class);
@@ -98,7 +134,10 @@ public class UsuarioController {
                     })
                     .collect(Collectors.toList());
 
+            int total = usuarioServiceObj.totalUsuarios();
+
             response.put("usuarios", listaUsuariosDTO);
+            response.put("total", total);
             log.info(listaUsuariosDTO.toString());
             return new ResponseEntity(response, HttpStatus.OK);
 
@@ -196,12 +235,11 @@ public class UsuarioController {
             // De lo contrario se pasan los datos al usuario
             usuarioBD.setNombre(usuarioDTO.getNombre());
             usuarioBD.setEmail(usuarioDTO.getEmail());
-            usuarioBD.setGoogle(usuarioDTO.getGoogle());
-            usuarioBD.setImg(usuarioDTO.getImg());
+            usuarioBD.setRole(usuarioDTO.getRole());
 
-            usuarioBD = usuarioServiceObj.save(usuarioBD);
+            Usuario usuariosaved = usuarioServiceObj.save(usuarioBD);
 
-            UsuarioDTO usuarioDTOResponse = modelMapper.map(usuarioBD, UsuarioDTO.class);
+            UsuarioDTO usuarioDTOResponse = modelMapper.map(usuariosaved, UsuarioDTO.class);
             usuarioDTOResponse.setPassword("");
 
             //Si no hay errores
@@ -270,12 +308,33 @@ public class UsuarioController {
 
 
     // Cargar foto en el servidor
-    @PostMapping("/upload/usuario")
-    public ResponseEntity upload(@RequestParam("archivo") MultipartFile archivo, @RequestParam("id") String id) {
+    @PostMapping("/upload")
+    public ResponseEntity upload(@RequestParam("archivo") MultipartFile archivo, @RequestParam("id") String id,
+                                 @RequestParam("tipo") String tipo) {
         Map<String, Object> response = new HashMap<>();
+        String nombreFoto;
+        Usuario usuario = null;
+        Hospital hospital = null;
+        Medico medico = null;
+        System.out.println(tipo);
 
-        //Se localiza al usuario
-        Usuario usuario = usuarioServiceObj.findById(id);
+        //Se localiza al usuario, hospital o medico
+        if(tipo.equals("usuario")){
+            usuario = usuarioServiceObj.findById(id);
+            nombreFoto = usuario.getImg();
+            System.out.println("ingresa a usuario");
+
+        }
+        else if (tipo.equals("hospital")){
+            hospital = hospitalServiceObj.findById(id);
+            nombreFoto = hospital.getImg();
+            System.out.println("ingresa a hospital");
+        }
+        else {
+            medico = medicoServiceObj.findById(id);
+            nombreFoto = medico.getImg();
+            System.out.println("ingresa a medico");
+        }
 
         if (!archivo.isEmpty()) {
             String nombreArchivo = null;
@@ -290,13 +349,27 @@ public class UsuarioController {
             }
 
             // Se revisa si el usuario ya tiene foto para eliminarla
-            String nombreFotoAnterior = usuario.getImg();
+            String nombreFotoAnterior = nombreFoto;
             uploadFileServiceObj.eliminar(nombreFotoAnterior);
 
             //Se guarda en BD el nombre de la foto
-            usuario.setImg(nombreArchivo);
-            usuarioServiceObj.save(usuario);
-            response.put("usuario", usuario);
+            if (tipo.equals("usuario")){
+                usuario.setImg(nombreArchivo);
+                usuarioServiceObj.save(usuario);
+                usuario.setPassword("");
+                response.put("usuario", usuario);
+            }
+            else if (tipo.equals("hospital")){
+                hospital.setImg(nombreArchivo);
+                hospitalServiceObj.save(hospital);
+                response.put("hospital",hospital);
+            }
+            else{
+                medico.setImg(nombreArchivo);
+                medicoServiceObj.save(medico);
+                response.put("medico", medico);
+            }
+
             response.put("mensaje", "Has cargado correctamente la foto");
             return new ResponseEntity(response, HttpStatus.CREATED);
         }

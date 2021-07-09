@@ -12,6 +12,7 @@ import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -41,7 +42,7 @@ public class UploadFileServiceImpl implements UploadFileService{
     @Override
     public String upload(MultipartFile archivo) throws IOException {
         //Asigna un nombre aleatorio
-        String nombreArchivo = UUID.randomUUID().toString() + "_" + archivo.getOriginalFilename().replace(" ", "-");
+        String nombreArchivo = UUID.randomUUID().toString() + "_" + Objects.requireNonNull(archivo.getOriginalFilename()).replace(" ", "-");
 
         //Obtiene la ruta del archivo
         Path rutaArchivo = getPath(nombreArchivo);
@@ -54,17 +55,15 @@ public class UploadFileServiceImpl implements UploadFileService{
 
     //Elimina la imagen
     @Override
-    public boolean eliminar(String nombreFoto) {
+    public void eliminar(String nombreFoto) {
         if (nombreFoto != null && nombreFoto.length() > 0){
             Path rutaFotoAnterior = getPath(nombreFoto);
             File archivoFotoAnterior = rutaFotoAnterior.toFile();
 
             if (archivoFotoAnterior.exists() && archivoFotoAnterior.canRead()){
                 archivoFotoAnterior.delete();
-                return true;
             }
         }
-        return false;
     }
 
     //Obtiene la ruta absoluta de acuerdo al nombre de la foto

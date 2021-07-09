@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -16,8 +18,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -42,8 +44,8 @@ public class UsuarioServiceImp implements UsuarioService, UserDetailsService {
     }
 
     @Override
-    public List<Usuario> findAll() {
-        return usuarioRepositoryObj.findAll();
+    public Page<Usuario> findAll(Pageable pageable) {
+        return usuarioRepositoryObj.findAll(pageable);
     }
 
     @Override
@@ -83,13 +85,10 @@ public class UsuarioServiceImp implements UsuarioService, UserDetailsService {
         }
 
         // Se carga el rol del usuario
-        List<GrantedAuthority> authorities = usuario.getRole()
-                .stream()
-                .map(role -> new SimpleGrantedAuthority(role.trim()))
-                .peek(authority -> System.out.println("role: " + authority.getAuthority()))
-                .collect(Collectors.toList());
+        GrantedAuthority authorities = new SimpleGrantedAuthority(usuario.getRole().trim());
 
-        return new User(usuario.getEmail().trim(), usuario.getPassword().trim(), true, true, true, true, authorities);
+
+        return new User(usuario.getEmail().trim(), usuario.getPassword().trim(), true, true, true, true, Collections.singletonList(authorities));
     }
 
 
@@ -99,15 +98,6 @@ public class UsuarioServiceImp implements UsuarioService, UserDetailsService {
     }
 
 
-    //Otra forma de realizarlo diferente a la actual que es mas corta
-    @Override
-    public List<UsuarioDTO> findAllDTO() {
-        return (usuarioRepositoryObj
-                .findAll()
-                .stream()
-                .map(this::convertToUsuarioDTO)
-                .collect(Collectors.toList()));
-    }
 
     private UsuarioDTO convertToUsuarioDTO(Usuario usuario) {
         modelMapper.getConfiguration()
@@ -120,7 +110,10 @@ public class UsuarioServiceImp implements UsuarioService, UserDetailsService {
     }
 
 
-
+    @Override
+    public int totalUsuarios() {
+        return usuarioRepositoryObj.findAll().size();
+    }
 }
 
 

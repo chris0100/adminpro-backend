@@ -14,4 +14,9 @@ public class Hospital {
     private String nombre;
     private String img;
     private Usuario idUsuarioCreate;
+
+
+    public Hospital() {
+        this.img = "sin-foto.png";
+    }
 }

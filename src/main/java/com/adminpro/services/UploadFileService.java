@@ -13,7 +13,7 @@ public interface UploadFileService {
 
     String upload(MultipartFile archivo) throws IOException;
 
-    boolean eliminar(String nombreFoto);
+    void eliminar(String nombreFoto);
 
     Path getPath(String nombreFoto);
  }

@@ -1,0 +1,2 @@
+com/adminpro/AdminproApplicationTests.java
+ com.adminpro.AdminproApplicationTests

@@ -135,7 +135,7 @@ public class HospitalController {
         try{
             // Se pasan los datos al hospital en BD
             hospitalBD.setNombre(hospital.getNombre());
-            hospitalBD.setImg(hospital.getImg());
+            //hospitalBD.setImg(hospital.getImg());
 
             //Se guarda en BD
             hospitalServiceObj.save(hospitalBD);

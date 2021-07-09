@@ -1,6 +1,8 @@
 package com.adminpro.controllers;
 
+import com.adminpro.entities.Hospital;
 import com.adminpro.entities.Medico;
+import com.adminpro.entities.Usuario;
 import com.adminpro.services.HospitalService;
 import com.adminpro.services.MedicoService;
 import com.adminpro.services.UsuarioService;
@@ -12,6 +14,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +36,30 @@ public class MedicoController {
     HospitalService hospitalServiceObj;
 
 
+    @GetMapping("/medicos/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity getOneMedico(@PathVariable("id") String id){
+        Medico medico;
+        Map<String, Object> response = new HashMap<>();
+
+        try{
+            medico = medicoServiceObj.findById(id);
+
+            if (medico == null){
+                response.put("mensaje", "No se encontro medico");
+                return new ResponseEntity(response, HttpStatus.NOT_FOUND);
+            }
+
+            response.put("medico", medico);
+            return new ResponseEntity(response, HttpStatus.OK);
+
+        }catch (DataAccessException de){
+            response.put("error", de.getMostSpecificCause().getMessage());
+            return new ResponseEntity(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
     //Listado de medicos
     @GetMapping("/medicos")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -47,7 +74,8 @@ public class MedicoController {
 
             if (listaMedicos.size() == 0){
                 response.put("mensaje", "No hay Medicos registrados");
-                return new ResponseEntity(response,HttpStatus.NOT_FOUND);
+                response.put("medicos", new ArrayList<>());
+                return new ResponseEntity(response,HttpStatus.OK);
             }
 
             response.put("medicos",listaMedicos);
@@ -63,9 +91,13 @@ public class MedicoController {
     // Agregar medico
     @PostMapping("/medicos")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity createMedico(@Valid @RequestBody Medico medico, BindingResult result){
+    public ResponseEntity createMedico(@Valid @RequestBody Medico medico, BindingResult result,
+                                       @RequestParam("idHospital") String idHospital,
+                                       @RequestParam("idUsuario") String idUsuario){
         //Medico que se crea en BD
         Medico medicoBD;
+        Hospital hospitalBD;
+        Usuario usuarioBD;
         Map<String, Object> response = new HashMap<>();
 
         // Se analiza el result
@@ -79,7 +111,13 @@ public class MedicoController {
         }
 
         try{
+            hospitalBD = hospitalServiceObj.findById(idHospital);
+            usuarioBD = usuarioServiceObj.findById(idUsuario);
+
+            medico.setUsuario(usuarioBD);
+            medico.setHospital(hospitalBD);
             medicoBD = medicoServiceObj.save(medico);
+            System.out.println(medicoBD);
 
             response.put("mensaje","Medico creado satisfactoriamente");
             response.put("medico", medicoBD);
@@ -101,6 +139,7 @@ public class MedicoController {
         //Localiza el medico original en BD
         Medico medicoBD = medicoServiceObj.findById(id);
         Map<String, Object> response = new HashMap<>();
+        Hospital hospital = hospitalServiceObj.findById(medico.getHospital().getId());
 
         // Se valida si el medico esta nulo
         if (medicoBD == null){
@@ -122,6 +161,7 @@ public class MedicoController {
             //Se pasan datos para modificar al medico
             medicoBD.setImg(medico.getImg());
             medicoBD.setNombre(medico.getNombre());
+            medicoBD.setHospital(hospital);
             medicoServiceObj.save(medicoBD);
 
             response.put("mensaje", "El Medico se ha modificado satisfactoriamente");

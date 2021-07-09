@@ -5,8 +5,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import javax.validation.constraints.NotNull;
-import java.util.ArrayList;
-import java.util.List;
 
 @Document(collection = "usuario")
 @Data
@@ -18,6 +16,7 @@ public class Usuario {
     @NotNull(message = "no puede estar vacio")
     private String nombre;
 
+    //@Indexed(unique = true)
     private String email;
 
     @NotNull(message = "no puede estar vacio")
@@ -25,8 +24,7 @@ public class Usuario {
 
     private String img;
 
-    @NotNull(message = "no puede estar vacio")
-    private List<String> role;
+    private String role;
 
     private Boolean google;
 
@@ -35,8 +33,6 @@ public class Usuario {
         this.google = false;
         this.img = "sin-foto.png";
 
-        List<String> listaRol = new ArrayList<>();
-        listaRol.add("USER_ROLE");
-        this.role = listaRol;
+        this.role = "USER_ROLE";
     }
 }
